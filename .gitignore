@@ -1,0 +1,9 @@
+.DS_Store
+build/
+Payload/
+*.ipa
+StudyTodo.xcodeproj/
+Widget/Info.plist
+xcuserdata/
+*.xcworkspace
+DerivedData/
