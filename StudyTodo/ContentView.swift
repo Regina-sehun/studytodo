@@ -1,5 +1,6 @@
 import SwiftUI
 import UserNotifications
+import WidgetKit
 
 struct ContentView: View {
     @AppStorage("p0.counter", store: SharedStore.defaults) private var counter: Int = 0
@@ -50,6 +51,7 @@ struct ContentView: View {
             .onAppear(perform: refreshNotifStatus)
             .onChange(of: counter) { _, _ in
                 SharedStore.updatedAt = Date()
+                WidgetCenter.shared.reloadAllTimelines()
             }
         }
     }
