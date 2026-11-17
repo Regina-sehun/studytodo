@@ -46,6 +46,24 @@ struct ContentView: View {
                 Section("④ AlarmKit（iOS 26 闹钟能力）") {
                     alarmKitStatus
                 }
+
+                Section("⑤ App Group 诊断") {
+                    HStack {
+                        Text("共享容器")
+                        Spacer()
+                        Text(SharedStore.groupContainerURL == nil ? "不可用 ❌" : "可用 ✅")
+                            .foregroundStyle(SharedStore.groupContainerURL == nil ? .red : .green)
+                    }
+                    Text(SharedStore.groupContainerPath)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    HStack {
+                        Text("本进程读到的计数")
+                        Spacer()
+                        Text("\(SharedStore.counter)")
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             .navigationTitle("StudyTodo · P0")
             .onAppear(perform: refreshNotifStatus)

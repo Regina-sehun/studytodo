@@ -5,11 +5,12 @@ struct P0Entry: TimelineEntry {
     let date: Date
     let counter: Int
     let target: Date
+    let hasGroup: Bool
 }
 
 struct P0Provider: TimelineProvider {
     func placeholder(in context: Context) -> P0Entry {
-        P0Entry(date: Date(), counter: 7, target: Date().addingTimeInterval(3600))
+        P0Entry(date: Date(), counter: 7, target: Date().addingTimeInterval(3600), hasGroup: true)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (P0Entry) -> Void) {
@@ -23,7 +24,12 @@ struct P0Provider: TimelineProvider {
     }
 
     private func currentEntry() -> P0Entry {
-        P0Entry(date: Date(), counter: SharedStore.counter, target: Date().addingTimeInterval(3600))
+        P0Entry(
+            date: Date(),
+            counter: SharedStore.counter,
+            target: Date().addingTimeInterval(3600),
+            hasGroup: SharedStore.groupContainerURL != nil
+        )
     }
 }
 
@@ -37,6 +43,9 @@ struct P0WidgetView: View {
                 .foregroundStyle(.secondary)
             Text("共享计数：\(entry.counter)")
                 .font(.system(.title3, design: .rounded).weight(.semibold))
+            Text(entry.hasGroup ? "App Group：可用 ✅" : "App Group：不可用 ❌")
+                .font(.caption2)
+                .foregroundStyle(entry.hasGroup ? .green : .red)
             Text(timerInterval: entry.date...entry.target, countsDown: true)
                 .font(.system(.body, design: .rounded).monospacedDigit())
             Spacer(minLength: 0)

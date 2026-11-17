@@ -18,4 +18,13 @@ enum SharedStore {
         get { defaults.object(forKey: "p0.updatedAt") as? Date }
         set { defaults.set(newValue, forKey: "p0.updatedAt") }
     }
+
+    /// nil 表示当前签名没有 App Group 权限（容器不可用）。
+    static var groupContainerURL: URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)
+    }
+
+    static var groupContainerPath: String {
+        groupContainerURL?.path ?? "nil（无 App Group 权限）"
+    }
 }
