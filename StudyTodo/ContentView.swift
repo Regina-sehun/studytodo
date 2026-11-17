@@ -6,6 +6,7 @@ struct ContentView: View {
     @AppStorage("p0.counter", store: SharedStore.defaults) private var counter: Int = 0
 
     @State private var notifStatus = "检查中…"
+    @State private var netStatus = "未测试"
     private let countdownEnd = Date().addingTimeInterval(3600)
 
     var body: some View {
@@ -64,6 +65,23 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+
+                Section("⑥ 网络连通性（云同步预检）") {
+                    HStack {
+                        Text("cloudflare.com")
+                        Spacer()
+                        Text(netStatus)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
+                    Button("测试联网") {
+                        netStatus = "测试中…"
+                        Task {
+                            netStatus = await Self.fetchNet()
+                        }
+                    }
+                }
             }
             .navigationTitle("StudyTodo · P0")
             .onAppear(perform: refreshNotifStatus)
@@ -81,6 +99,21 @@ struct ContentView: View {
         #else
         Text("当前构建没有 AlarmKit ❌（将降级为普通通知）")
         #endif
+    }
+
+    private static func fetchNet() async -> String {
+        var req = URLRequest(url: URL(string: "https://www.cloudflare.com/cdn-cgi/trace")!)
+        req.timeoutInterval = 10
+        req.cachePolicy = .reloadIgnoringLocalCacheData
+        do {
+            let (data, _) = try await URLSession.shared.data(for: req)
+            let text = String(decoding: data, as: UTF8.self)
+            let ip = text.split(separator: "\n").first { $0.hasPrefix("ip=") }?.dropFirst(3) ?? ""
+            let colo = text.split(separator: "\n").first { $0.hasPrefix("colo=") }?.dropFirst(5) ?? ""
+            return "✅ \(colo) \(ip)"
+        } catch {
+            return "❌ \(error.localizedDescription.prefix(40))"
+        }
     }
 
     private func requestNotif() {

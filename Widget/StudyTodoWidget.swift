@@ -6,29 +6,51 @@ struct P0Entry: TimelineEntry {
     let counter: Int
     let target: Date
     let hasGroup: Bool
+    let net: String
 }
 
 struct P0Provider: TimelineProvider {
+    static let netURL = URL(string: "https://www.cloudflare.com/cdn-cgi/trace")!
+
     func placeholder(in context: Context) -> P0Entry {
-        P0Entry(date: Date(), counter: 7, target: Date().addingTimeInterval(3600), hasGroup: true)
+        P0Entry(date: Date(), counter: 7, target: Date().addingTimeInterval(3600), hasGroup: true, net: "…")
     }
 
     func getSnapshot(in context: Context, completion: @escaping (P0Entry) -> Void) {
-        completion(currentEntry())
+        completion(currentEntry(net: "…"))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<P0Entry>) -> Void) {
-        let entry = currentEntry()
-        let next = Date().addingTimeInterval(15 * 60)
-        completion(Timeline(entries: [entry], policy: .after(next)))
+        Task {
+            let net = await Self.fetchNet()
+            let entry = currentEntry(net: net)
+            let next = Date().addingTimeInterval(net.hasPrefix("✅") ? 15 * 60 : 2 * 60)
+            completion(Timeline(entries: [entry], policy: .after(next)))
+        }
     }
 
-    private func currentEntry() -> P0Entry {
+    static func fetchNet() async -> String {
+        var req = URLRequest(url: netURL)
+        req.timeoutInterval = 10
+        req.cachePolicy = .reloadIgnoringLocalCacheData
+        do {
+            let (data, _) = try await URLSession.shared.data(for: req)
+            let text = String(decoding: data, as: UTF8.self)
+            let ip = text.split(separator: "\n").first { $0.hasPrefix("ip=") }?.dropFirst(3) ?? ""
+            let colo = text.split(separator: "\n").first { $0.hasPrefix("colo=") }?.dropFirst(5) ?? ""
+            return "✅ \(colo) \(ip)"
+        } catch {
+            return "❌ \(error.localizedDescription.prefix(40))"
+        }
+    }
+
+    private func currentEntry(net: String) -> P0Entry {
         P0Entry(
             date: Date(),
             counter: SharedStore.counter,
             target: Date().addingTimeInterval(3600),
-            hasGroup: SharedStore.groupContainerURL != nil
+            hasGroup: SharedStore.groupContainerURL != nil,
+            net: net
         )
     }
 }
@@ -46,6 +68,11 @@ struct P0WidgetView: View {
             Text(entry.hasGroup ? "App Group：可用 ✅" : "App Group：不可用 ❌")
                 .font(.caption2)
                 .foregroundStyle(entry.hasGroup ? .green : .red)
+            Text("网络：\(entry.net)")
+                .font(.caption2)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .foregroundStyle(entry.net.hasPrefix("✅") ? .green : .red)
             Text(timerInterval: entry.date...entry.target, countsDown: true)
                 .font(.system(.body, design: .rounded).monospacedDigit())
             Spacer(minLength: 0)
