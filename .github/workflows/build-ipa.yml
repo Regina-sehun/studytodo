@@ -13,6 +13,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: 注入同步密钥
+        env:
+          SYNC_KEY: ${{ secrets.SYNC_KEY }}
+        run: |
+          if [ -n "$SYNC_KEY" ]; then
+            printf 'enum SyncKey { static let value = "%s" }\n' "$SYNC_KEY" > Shared/SyncKey.generated.swift
+            echo "已注入 SYNC_KEY"
+          else
+            echo "未配置 SYNC_KEY，使用占位密钥"
+          fi
+
       - name: 查看可用 Xcode
         run: ls /Applications | grep -i xcode || true
 
